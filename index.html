@@ -1,0 +1,2863 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Küçük Bir Köşe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Nunito+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================================
+     ÖZELLEŞTİRME NOTLARI (bu bölümü silebilirsin)
+     - "SEVGİLİM_ADI" yazan yerleri aşağıdaki JS bölümünde bulup
+       kendi sevgilinin ismiyle değiştir (Ctrl+F ile arayabilirsin).
+     - Aşk falı kartlarını TAROT_DECK dizisinden düzenleyebilir,
+       MAX_CARDS ile aynı anda kaç kart çekilebileceğini değiştirebilirsin.
+     - Renkleri :root içindeki değişkenlerden değiştirebilirsin.
+     ============================================================ */
+
+        :root {
+            --night-deep: #171526;
+            --night-mid: #221f3b;
+            --night-soft: #2e2a4d;
+            --lamp-glow: #f4c76b;
+            --lamp-glow-soft: rgba(244, 199, 107, 0.25);
+            --rose: #f2a6ad;
+            --rose-soft: rgba(242, 166, 173, 0.18);
+            --star: #e8e6f5;
+            --ink: #efe9f7;
+            --ink-dim: #b7aed1;
+            --line: rgba(232, 230, 245, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(ellipse at 20% -10%, rgba(244, 199, 107, 0.06), transparent 45%),
+                radial-gradient(ellipse at 80% 0%, rgba(242, 166, 173, 0.05), transparent 40%),
+                linear-gradient(180deg, var(--night-deep), var(--night-mid) 55%, var(--night-deep));
+            color: var(--ink);
+            font-family: 'Nunito Sans', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .stars span {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--star);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: twinkle 4s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: .15
+            }
+
+            50% {
+                opacity: .85
+            }
+        }
+
+        #bettaCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            opacity: 0.9;
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 0 24px 100px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            margin: 0 0 8px;
+            letter-spacing: 0.01em;
+        }
+
+        section {
+            padding: 64px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        section:last-of-type {
+            border-bottom: none;
+        }
+
+        .eyebrow {
+            font-size: 13px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--rose);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        p.lead {
+            color: var(--ink-dim);
+            font-size: 16px;
+            max-width: 56ch;
+        }
+
+        /* ---------- HERO / LAMBA ---------- */
+        .hero {
+            text-align: center;
+            padding-top: 80px;
+            padding-bottom: 40px;
+            border-bottom: none;
+        }
+
+        #greeting {
+            font-size: clamp(30px, 6vw, 46px);
+            margin-bottom: 4px;
+        }
+
+        #subgreeting {
+            color: var(--ink-dim);
+            font-size: 17px;
+            margin-bottom: 48px;
+        }
+
+        .lamp-scene {
+            position: relative;
+            width: 220px;
+            height: 260px;
+            margin: 0 auto 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .lamp-cone {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 55px solid transparent;
+            border-right: 55px solid transparent;
+            border-top: 70px solid var(--night-soft);
+            transition: border-top-color .4s ease, filter .4s ease;
+        }
+
+        .lamp-pole {
+            position: absolute;
+            top: 68px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 90px;
+            background: var(--night-soft);
+            border-radius: 2px;
+            transition: background .4s ease;
+        }
+
+        .lamp-base {
+            position: absolute;
+            top: 156px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 12px;
+            background: var(--night-soft);
+            border-radius: 6px;
+            transition: background .4s ease;
+        }
+
+        .glow {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            filter: blur(18px);
+            transition: all .5s ease;
+        }
+
+        /* İlk açılışta lamba yavaşça yanmalı */
+        .lamp-scene.igniting .lamp-cone {
+            transition: border-top-color 2.6s ease, filter 2.6s ease;
+        }
+
+        .lamp-scene.igniting .lamp-pole,
+        .lamp-scene.igniting .lamp-base {
+            transition: background 2.6s ease;
+        }
+
+        .lamp-scene.igniting .glow {
+            transition: all 2.6s ease;
+        }
+
+        .lamp-scene.lit .lamp-cone {
+            border-top-color: var(--lamp-glow);
+            filter: drop-shadow(0 0 18px var(--lamp-glow-soft));
+        }
+
+        .lamp-scene.lit .lamp-pole,
+        .lamp-scene.lit .lamp-base {
+            background: #4a4470;
+        }
+
+        .lamp-scene.lit .glow {
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, var(--lamp-glow-soft), transparent 70%);
+            top: -30px;
+        }
+
+        .lamp-hint {
+            font-size: 13px;
+            color: var(--ink-dim);
+            opacity: .7;
+            margin-top: -6px;
+        }
+
+        /* ---------- GENEL ---------- */
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 28px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(232, 230, 245, 0.03);
+            color: var(--ink);
+            border: 1px solid rgba(232, 230, 245, 0.25);
+            padding: 11px 22px;
+            border-radius: 999px;
+            font-family: 'Nunito Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .3s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        .btn:hover {
+            border-color: var(--lamp-glow);
+            box-shadow: 0 0 0 4px var(--lamp-glow-soft), 0 8px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px) scale(1.03);
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--lamp-glow);
+            outline-offset: 2px;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--lamp-glow), var(--rose));
+            color: #241c10;
+            border: none;
+            box-shadow: 0 4px 16px rgba(242, 166, 173, 0.25);
+        }
+
+        .btn.primary:hover {
+            box-shadow: 0 10px 28px rgba(244, 199, 107, 0.35), 0 0 0 4px var(--lamp-glow-soft);
+        }
+
+        /* Başlıklarda tatlı ışıltı */
+        h1,
+        h2 {
+            background: linear-gradient(120deg, var(--ink) 0%, var(--lamp-glow) 50%, var(--rose) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% auto;
+            animation: shimmer 6s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+
+            0%,
+            100% {
+                background-position: 0% center;
+            }
+
+            50% {
+                background-position: 100% center;
+            }
+        }
+
+        h1::after {
+            content: " ✿";
+            -webkit-text-fill-color: var(--rose);
+            display: inline-block;
+            animation: bob 3s ease-in-out infinite;
+        }
+
+        @keyframes bob {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-4px) rotate(15deg);
+            }
+        }
+
+        /* ---------- MOOD ---------- */
+        .mood-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0 24px;
+        }
+
+        .mood-grid button {
+            font-family: 'Nunito Sans', sans-serif;
+        }
+
+        .mood-grid button.active {
+            background: var(--rose-soft);
+            border-color: var(--rose);
+        }
+
+        #moodResponse {
+            min-height: 70px;
+            font-size: 17px;
+            font-style: italic;
+            color: var(--ink);
+            border-left: 2px solid var(--lamp-glow);
+            padding-left: 18px;
+            opacity: 0;
+            transition: opacity .4s ease;
+        }
+
+        #moodResponse.show {
+            opacity: 1;
+        }
+
+        /* ---------- AŞK FALI (TAROT) ---------- */
+        .tarot-area {
+            text-align: center;
+        }
+
+        .tarot-deck {
+            width: 96px;
+            height: 138px;
+            margin: 0 auto 14px;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .tarot-deck .deck-card {
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: linear-gradient(150deg, var(--night-soft), var(--night-mid));
+            transition: transform .3s ease, box-shadow .3s ease;
+        }
+
+        .tarot-deck .deck-card:nth-child(1) {
+            transform: rotate(-7deg) translateX(-5px);
+        }
+
+        .tarot-deck .deck-card:nth-child(2) {
+            transform: rotate(4deg) translateX(4px);
+        }
+
+        .tarot-deck .deck-card:nth-child(3) {
+            transform: rotate(0);
+        }
+
+        .tarot-deck:hover .deck-card,
+        .tarot-deck:focus-visible .deck-card {
+            box-shadow: 0 0 0 2px var(--lamp-glow-soft);
+        }
+
+        .tarot-deck .deck-icon {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: .65;
+            font-size: 28px;
+            filter: drop-shadow(0 0 6px var(--lamp-glow-soft));
+        }
+
+        .tarot-note {
+            font-size: 13.5px;
+            color: var(--ink-dim);
+            opacity: .85;
+            max-width: 48ch;
+            margin: 0 auto 22px;
+            font-style: italic;
+        }
+
+        .tarot-deck.maxed {
+            cursor: default;
+            opacity: .5;
+        }
+
+        .tarot-hint {
+            font-size: 13px;
+            color: var(--ink-dim);
+            opacity: .7;
+            margin: 0 0 20px;
+        }
+
+        .tarot-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+            margin: 8px 0 26px;
+        }
+
+        .tarot-card {
+            width: 112px;
+            height: 168px;
+            perspective: 1000px;
+        }
+
+        .tarot-card:not(.flipped) {
+            cursor: pointer;
+        }
+
+        .tarot-card:not(.flipped) .tarot-card-back {
+            transition: box-shadow .25s ease;
+        }
+
+        .tarot-card:not(.flipped):hover .tarot-card-back {
+            box-shadow: 0 0 0 2px var(--lamp-glow-soft);
+        }
+
+        .tarot-card-flip-hint {
+            font-size: 10.5px;
+            color: var(--ink-dim);
+            opacity: .55;
+            margin-top: 10px;
+            letter-spacing: .02em;
+        }
+
+        .tarot-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transform: rotateY(180deg);
+            transition: transform .7s cubic-bezier(.4, .15, .2, 1);
+        }
+
+        .tarot-card.flipped .tarot-card-inner {
+            transform: rotateY(360deg);
+        }
+
+        .tarot-card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 10px;
+            text-align: center;
+        }
+
+        .tarot-card-back {
+            background: linear-gradient(150deg, var(--night-soft), var(--night-mid));
+            transform: rotateY(180deg);
+        }
+
+        .tarot-card-back .card-emoji {
+            font-size: 26px;
+            opacity: .6;
+            filter: drop-shadow(0 0 6px var(--lamp-glow-soft));
+        }
+
+        .tarot-card-front {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tarot-card-front .card-emoji {
+            font-size: 34px;
+            margin-bottom: 8px;
+            display: block;
+            line-height: 1;
+        }
+
+        .tarot-card-suit {
+            font-size: 10px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--rose);
+            opacity: .8;
+            margin-bottom: 2px;
+        }
+
+        .tarot-card-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+
+        .tarot-card-meaning {
+            font-size: 11px;
+            color: var(--ink-dim);
+            line-height: 1.4;
+        }
+
+        #tarotInterpretation {
+            max-width: 56ch;
+            margin: 0 auto;
+            text-align: left;
+            display: none;
+        }
+
+        #tarotInterpretation .eyebrow {
+            margin-bottom: 6px;
+        }
+
+        #tarotInterpretation h3 {
+            font-size: 21px;
+            margin-bottom: 12px;
+        }
+
+        #tarotInterpretation p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 19px;
+            font-style: italic;
+            color: var(--ink);
+            margin: 0;
+        }
+
+        .tarot-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        /* ---------- MÜZİK ---------- */
+        .music-area {
+            text-align: center;
+        }
+
+        .music-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            margin: 6px 0 26px;
+        }
+
+        .music-upload input[type="file"] {
+            display: none;
+        }
+
+        .music-empty {
+            font-size: 13px;
+            color: var(--ink-dim);
+            opacity: .7;
+        }
+
+        .playlist {
+            list-style: none;
+            margin: 0 0 22px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+
+        .playlist li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: border-color .2s ease, background .2s ease;
+        }
+
+        .playlist li:hover {
+            border-color: var(--lamp-glow);
+        }
+
+        .playlist li.playing {
+            border-color: var(--lamp-glow);
+            background: var(--lamp-glow-soft);
+        }
+
+        .playlist li .track-icon {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(244, 199, 107, 0.15);
+            color: var(--lamp-glow);
+        }
+
+        .playlist li .track-icon svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .playlist li .track-name {
+            flex: 1 1 auto;
+            font-size: 14.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .playlist li .track-remove {
+            background: none;
+            border: none;
+            color: var(--ink-dim);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 4px;
+            opacity: .6;
+            transition: opacity .2s ease, color .2s ease;
+        }
+
+        .playlist li .track-remove:hover {
+            opacity: 1;
+            color: var(--rose);
+        }
+
+        .player-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .now-playing {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-style: italic;
+            min-height: 28px;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .player-controls button {
+            background: transparent;
+            border: 1px solid rgba(232, 230, 245, 0.25);
+            color: var(--ink);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all .2s ease;
+        }
+
+        .player-controls button:hover {
+            border-color: var(--lamp-glow);
+            box-shadow: 0 0 0 3px var(--lamp-glow-soft);
+        }
+
+        .player-controls button.play-pause {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--lamp-glow), var(--rose));
+            color: #241c10;
+            border: none;
+        }
+
+        .player-controls svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .seek-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--ink-dim);
+        }
+
+        .seek-row input[type="range"] {
+            flex: 1 1 auto;
+            accent-color: var(--lamp-glow);
+        }
+
+        .volume-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--ink-dim);
+        }
+
+        .volume-row input[type="range"] {
+            width: 100px;
+            accent-color: var(--rose);
+        }
+
+        /* ---------- DEFTER ---------- */
+        textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            color: var(--ink);
+            padding: 16px;
+            font-family: 'Nunito Sans', sans-serif;
+            font-size: 15px;
+            resize: vertical;
+            min-height: 110px;
+        }
+
+        textarea:focus-visible {
+            outline: 2px solid var(--lamp-glow);
+        }
+
+        .journal-reply {
+            margin-top: 16px;
+            font-style: italic;
+            color: var(--ink-dim);
+            border-left: 2px solid var(--rose);
+            padding-left: 16px;
+            display: none;
+        }
+
+        .journal-note {
+            font-size: 12.5px;
+            color: var(--ink-dim);
+            opacity: .6;
+            margin-top: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding-top: 50px;
+            color: var(--ink-dim);
+            font-size: 14px;
+        }
+
+        footer .heart {
+            color: var(--rose);
+        }
+
+        @media (max-width: 480px) {
+            section {
+                padding: 48px 0;
+            }
+
+            .hero {
+                padding-top: 56px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: .001ms !important;
+                transition-duration: .001ms !important;
+            }
+        }
+
+        /* ---------- yüzen kontrol butonları (balık + ses) ---------- */
+        #fishToggle,
+        #muteToggle {
+            position: fixed;
+            bottom: 20px;
+            z-index: 5;
+            width: 46px;
+            height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(232, 230, 245, 0.25);
+            background: rgba(23, 21, 38, 0.55);
+            color: var(--ink);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transition: all .3s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        #fishToggle {
+            right: 20px;
+        }
+
+        #muteToggle {
+            right: 76px;
+        }
+
+        #fishToggle svg,
+        #muteToggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        #fishToggle:hover,
+        #muteToggle:hover {
+            border-color: var(--lamp-glow);
+            color: var(--lamp-glow);
+            box-shadow: 0 0 0 4px var(--lamp-glow-soft), 0 8px 22px rgba(0, 0, 0, 0.35);
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        #fishToggle.paused,
+        #muteToggle.muted {
+            color: var(--rose);
+            border-color: var(--rose);
+            box-shadow: 0 0 0 4px var(--rose-soft), 0 8px 22px rgba(0, 0, 0, 0.35);
+        }
+
+        #fishToggle:focus-visible,
+        #muteToggle:focus-visible {
+            outline: 2px solid var(--lamp-glow);
+            outline-offset: 3px;
+        }
+
+        #muteToggle.pulse {
+            animation: mutePulse 1.6s ease-in-out infinite;
+        }
+
+        @keyframes mutePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 var(--lamp-glow-soft), 0 6px 20px rgba(0, 0, 0, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(244, 199, 107, 0.05), 0 6px 20px rgba(0, 0, 0, 0.3);
+            }
+        }
+    
+        /* ============================================================
+           YENİ EKLENEN BÖLÜMLER (Mektuplar, Yıldız Haritası, Sayaç, Kavanoz)
+           ============================================================ */
+        
+        /* 2. Açılmayı Bekleyen Mektuplar */
+        .letters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .letter-envelope {
+            background: linear-gradient(145deg, rgba(46, 42, 77, 0.7), rgba(34, 31, 59, 0.8));
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 22px 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .letter-envelope:hover {
+            transform: translateY(-5px);
+            border-color: var(--rose);
+            box-shadow: 0 8px 24px var(--rose-soft);
+        }
+        .letter-envelope .env-icon {
+            font-size: 2.4rem;
+            margin-bottom: 10px;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        .letter-envelope:hover .env-icon {
+            transform: scale(1.15) rotate(4deg);
+        }
+        .letter-envelope h3 {
+            font-size: 1.05rem;
+            margin: 0 0 6px 0;
+            color: var(--ink);
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+        }
+        .letter-envelope .env-status {
+            font-size: 0.75rem;
+            color: var(--lamp-glow);
+            letter-spacing: 0.5px;
+            opacity: 0.85;
+        }
+
+        /* Mektup Modal Penceresi */
+        .letter-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 13, 24, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .letter-modal-backdrop.active {
+            display: flex;
+            opacity: 1;
+        }
+        .letter-modal-paper {
+            background: #fdfaf3;
+            color: #2b262d;
+            width: 100%;
+            max-width: 520px;
+            padding: 34px 28px;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5), inset 0 0 50px rgba(220,205,180,0.3);
+            border: 1px solid #ebd9c8;
+            font-family: 'Cormorant Garamond', serif;
+            transform: scale(0.92);
+            transition: transform 0.3s ease;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .letter-modal-backdrop.active .letter-modal-paper {
+            transform: scale(1);
+        }
+        .letter-modal-paper h3 {
+            font-size: 1.5rem;
+            color: #7d2a3c;
+            margin-top: 0;
+            margin-bottom: 14px;
+            border-bottom: 1px dashed rgba(125, 42, 60, 0.3);
+            padding-bottom: 8px;
+        }
+        .letter-modal-paper p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            white-space: pre-line;
+            color: #3b3238;
+        }
+        .letter-modal-close {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            color: #8b7d7f;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        .letter-modal-close:hover {
+            color: #2b262d;
+        }
+
+        /* 3. Sana Özel Yıldız Haritası */
+        .sky-map-card {
+            background: rgba(34, 31, 59, 0.7);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 24px;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .sky-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 18px;
+        }
+        .sky-controls input[type="date"], .sky-controls input[type="text"] {
+            background: rgba(23, 21, 38, 0.7);
+            border: 1px solid var(--line);
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .sky-controls input[type="date"]:focus, .sky-controls input[type="text"]:focus {
+            border-color: var(--lamp-glow);
+        }
+        .sky-canvas-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(244, 199, 107, 0.15), inset 0 0 40px rgba(0,0,0,0.8);
+            border: 2px solid rgba(244, 199, 107, 0.4);
+            background: radial-gradient(circle at center, #1b1933 0%, #0c0b17 100%);
+        }
+        #skyCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .sky-info-badge {
+            margin-top: 16px;
+            text-align: center;
+        }
+        .sky-info-badge .sky-date {
+            font-size: 1.15rem;
+            color: var(--lamp-glow);
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+        }
+        .sky-info-badge .sky-note {
+            font-size: 0.9rem;
+            color: var(--ink-dim);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        /* 4. Kavuşma Sayacı */
+        .countdown-card {
+            background: rgba(34, 31, 59, 0.7);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 26px 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .countdown-timer {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            max-width: 440px;
+            margin: 20px auto;
+        }
+        .countdown-box {
+            background: rgba(23, 21, 38, 0.85);
+            border: 1px solid rgba(244, 199, 107, 0.25);
+            border-radius: 14px;
+            padding: 14px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+        }
+        .countdown-box .count-num {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--lamp-glow);
+            font-family: 'Cormorant Garamond', serif;
+            line-height: 1;
+        }
+        .countdown-box .count-lbl {
+            font-size: 0.72rem;
+            color: var(--ink-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+        .countdown-message {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            color: var(--rose);
+            font-style: italic;
+            display: none;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--rose-soft);
+            border: 1px solid rgba(242, 166, 173, 0.3);
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 1; box-shadow: 0 0 15px var(--rose-soft); }
+        }
+        .countdown-picker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .countdown-picker input[type="datetime-local"] {
+            background: rgba(23, 21, 38, 0.7);
+            border: 1px solid var(--line);
+            color: var(--ink);
+            padding: 7px 12px;
+            border-radius: 8px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        /* 7. İki Kişilik Dijital Kavanoz */
+        .jar-container {
+            background: rgba(34, 31, 59, 0.7);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 26px 20px;
+            margin-top: 20px;
+        }
+        .jar-visual-wrapper {
+            position: relative;
+            width: 170px;
+            height: 220px;
+            margin: 0 auto 20px auto;
+            border: 3px solid rgba(244, 199, 107, 0.45);
+            border-top: 8px solid rgba(244, 199, 107, 0.7);
+            border-radius: 20px 20px 45px 45px;
+            background: radial-gradient(ellipse at 50% 30%, rgba(244, 199, 107, 0.08), rgba(23, 21, 38, 0.85));
+            box-shadow: inset 0 0 25px rgba(244, 199, 107, 0.1), 0 8px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 12px;
+            cursor: pointer;
+        }
+        .jar-papers-preview {
+            display: flex;
+            flex-wrap: wrap-reverse;
+            gap: 5px;
+            justify-content: center;
+            padding: 10px;
+            width: 100%;
+            max-height: 160px;
+            overflow: hidden;
+        }
+        .jar-mini-note {
+            width: 26px;
+            height: 18px;
+            border-radius: 3px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+            animation: float-mini 3s ease-in-out infinite alternate;
+        }
+        @keyframes float-mini {
+            0% { transform: translateY(0) rotate(-3deg); }
+            100% { transform: translateY(-4px) rotate(3deg); }
+        }
+        .jar-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        .jar-author-select {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .jar-author-btn {
+            background: rgba(23, 21, 38, 0.6);
+            border: 1px solid var(--line);
+            color: var(--ink-dim);
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .jar-author-btn.active {
+            border-color: var(--rose);
+            color: var(--ink);
+            background: var(--rose-soft);
+        }
+        .jar-textarea {
+            width: 100%;
+            height: 80px;
+            background: rgba(23, 21, 38, 0.7);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--ink);
+            font-family: inherit;
+            resize: none;
+            outline: none;
+        }
+        .jar-textarea:focus {
+            border-color: var(--lamp-glow);
+        }
+        .jar-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .jar-notes-list {
+            margin-top: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .jar-note-item {
+            background: rgba(23, 21, 38, 0.7);
+            border-left: 3px solid var(--rose);
+            border-radius: 6px 12px 12px 6px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .jar-note-item.author-cuma {
+            border-left-color: var(--lamp-glow);
+        }
+        .jar-note-text {
+            font-size: 0.95rem;
+            color: var(--ink);
+            flex: 1;
+            word-break: break-word;
+        }
+        .jar-note-meta {
+            font-size: 0.72rem;
+            color: var(--ink-dim);
+            margin-top: 4px;
+        }
+        .jar-note-delete {
+            background: none;
+            border: none;
+            color: var(--ink-dim);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 2px 6px;
+            line-height: 1;
+            border-radius: 4px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .jar-note-delete:hover {
+            opacity: 1;
+            color: var(--rose);
+        }
+        .jar-sync-badge {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 0.76rem;
+            color: var(--ink-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .jar-sync-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px #22c55e;
+        }
+        .jar-sync-indicator.connecting {
+            background: #eab308;
+            box-shadow: 0 0 6px #eab308;
+        }
+        .jar-sync-settings-toggle {
+            background: none;
+            border: none;
+            color: var(--lamp-glow);
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.76rem;
+            padding: 0;
+            margin-left: 6px;
+        }
+        .jar-config-panel {
+            margin-top: 14px;
+            padding: 14px;
+            background: rgba(23, 21, 38, 0.9);
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            display: none;
+        }
+        .jar-config-panel.open {
+            display: block;
+        }
+        .jar-config-panel input {
+            width: 100%;
+            background: rgba(15, 13, 24, 0.8);
+            border: 1px solid var(--line);
+            color: var(--ink);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="stars" id="stars"></div>
+    <canvas id="bettaCanvas" aria-hidden="true"></canvas>
+    <audio id="bgSong" src="sarki.mp4" loop preload="auto" playsinline autoplay></audio>
+
+    <div class="wrap">
+
+        <!-- HERO -->
+        <section class="hero">
+            <div class="lamp-scene" id="lampScene" role="button" tabindex="0" aria-label="Lambayı yak">
+                <div class="glow"></div>
+                <div class="lamp-cone"></div>
+                <div class="lamp-pole"></div>
+                <div class="lamp-base"></div>
+            </div>
+            <p class="lamp-hint">lambaya dokun</p>
+            <h1 id="greeting">merhaba</h1>
+            <p id="subgreeting">canın ne zaman sıkılsa, burası hep açık.</p>
+        </section>
+
+        <!-- MOOD -->
+        <section id="mood">
+            <div class="eyebrow">şu an</div>
+            <h2>bugün nasılsın?</h2>
+            <p class="lead">bir tanesine dokun, sana göre tatlı bir şey fısıldayayım. 🤍</p>
+            <div class="mood-grid">
+                <button class="btn" data-mood="sikildim">sıkıldım</button>
+                <button class="btn" data-mood="uzgunum">üzgünüm</button>
+                <button class="btn" data-mood="yorgunum">yorgunum</button>
+                <button class="btn" data-mood="kizginim">kızgınım</button>
+                <button class="btn" data-mood="mutluyum">mutluyum</button>
+                <button class="btn" data-mood="heyecanli">heyecanlıyım ✨</button>
+                <button class="btn" data-mood="utaniyorum">utanıyorum 🙈</button>
+                <button class="btn" data-mood="huzurlu">huzurluyum 🌙</button>
+                <button class="btn" data-mood="yaramaz">yaramazım 😌</button>
+                <button class="btn" data-mood="sarilmak">sarılmak istiyorum 🫂</button>
+            </div>
+            <div class="card">
+                <p id="moodResponse" class="show">Kalbim her an seninle çarpıyor; bir dokunuşunla ruhuma fısılda sevgilim... ✨</p>
+            </div>
+        </section>
+
+        <!-- AŞK FALI -->
+        <section id="tarot">
+            <div class="eyebrow">Tarot Falı</div>
+            <h2>kartlarını çek</h2>
+            <p class="lead">içinden geldiği kadar kart seç, her biri size dair küçük bir söz taşıyor.</p>
+            <p class="tarot-note">bu kartlar geleceği göstermiyor; sana ait sembollerle konuşuyor. bazen sezgi, bazen
+                sadece o an hissettiklerinin bir yansıması — anlamı, içinde bulduğun şey oluyor.</p>
+            <div class="tarot-area">
+                <div class="tarot-deck" id="tarotDeck" role="button" tabindex="0"
+                    aria-label="Deste, kart çekmek için dokun">
+                    <div class="deck-card"></div>
+                    <div class="deck-card"></div>
+                    <div class="deck-card"></div>
+                    <div class="deck-icon">🔮</div>
+                </div>
+                <p class="tarot-hint" id="tarotHint">desteye dokun, ilk kartını çek</p>
+                <div class="tarot-actions">
+                    <button class="btn primary" id="tarotDrawBtn">bir kart çek</button>
+                    <button class="btn" id="tarotResetBtn" style="display:none;">baştan başla</button>
+                </div>
+                <div class="tarot-cards" id="tarotCards"></div>
+                <div class="card" id="tarotInterpretation">
+                    <div class="eyebrow">yorum</div>
+                    <h3 id="tarotInterpretationTitle"></h3>
+                    <p id="tarotInterpretationBody"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MÜZİK -->
+        <section id="music">
+            <div class="eyebrow">bir dakikalığına</div>
+            <h2>sana bir şarkı çalayım</h2>
+            <p class="lead">bilgisayarındaki şarkıları buraya ekle, canın ne zaman isterse burada seçip dinle.</p>
+            <div class="music-area">
+                <div class="music-upload">
+                    <label class="btn primary" for="musicFileInput">
+                        şarkı ekle
+                    </label>
+                    <input type="file" id="musicFileInput" accept="audio/*" multiple>
+                    <p class="music-empty" id="musicEmpty">henüz eklenmiş bir şarkı yok</p>
+                </div>
+
+                <ul class="playlist" id="playlist"></ul>
+
+                <div class="card player-card" id="playerCard" style="display:none;">
+                    <div class="now-playing" id="nowPlaying">—</div>
+                    <div class="seek-row">
+                        <span id="currentTime">0:00</span>
+                        <input type="range" id="seekBar" min="0" max="100" value="0">
+                        <span id="duration">0:00</span>
+                    </div>
+                    <div class="player-controls">
+                        <button id="prevBtn" aria-label="önceki şarkı">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 6h2v12H6zM20 6L9 12l11 6z" />
+                            </svg>
+                        </button>
+                        <button class="play-pause" id="playPauseBtn" aria-label="oynat / durdur">
+                            <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                            <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                                <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+                            </svg>
+                        </button>
+                        <button id="nextBtn" aria-label="sonraki şarkı">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M16 6h2v12h-2zM4 6l11 6-11 6z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="volume-row">
+                        <span>ses</span>
+                        <input type="range" id="volumeBar" min="0" max="100" value="80">
+                    </div>
+                </div>
+                <audio id="audioPlayer"></audio>
+            </div>
+        </section>
+
+        <!-- DEFTER -->
+        <section id="journal">
+            <div class="eyebrow">serbest alan</div>
+            <h2>içini dökmek istersen</h2>
+            <p class="lead">burada yazdıkların hiçbir yere kaydedilmiyor, sadece şu an için senin. istersen yaz,
+                istersen sil.</p>
+            <textarea id="journalInput" placeholder="ne düşünüyorsun...?"></textarea>
+            <div style="margin-top:12px;">
+                <button class="btn primary" id="journalBtn">bunu bir yere bırak</button>
+            </div>
+            <p class="journal-reply" id="journalReply"></p>
+            <p class="journal-note">not: sayfa yenilendiğinde bu yazı kaybolur, hiçbir yere gönderilmez.</p>
+        </section>
+
+        
+        <!-- 2. AÇILMAYI BEKLEYEN MEKTUPLAR -->
+        <section id="letters">
+            <div class="eyebrow">özel zamanlar için</div>
+            <h2>açılmayı bekleyen mektuplar</h2>
+            <p class="lead">her bir zarfta senin için yazılmış bir parça var. sadece zamanı geldiğinde açman dileğiyle...</p>
+            
+            <div class="letters-grid">
+                <div class="letter-envelope" data-letter="miss">
+                    <div class="env-icon">💌</div>
+                    <h3>beni özlediğinde aç</h3>
+                    <div class="env-status">mektubu oku ✨</div>
+                </div>
+                <div class="letter-envelope" data-letter="bad-day">
+                    <div class="env-icon">🌧️</div>
+                    <h3>kötü bir gün geçirdiğinde aç</h3>
+                    <div class="env-status">mektubu oku ✨</div>
+                </div>
+                <div class="letter-envelope" data-letter="birthday">
+                    <div class="env-icon">🎂</div>
+                    <h3>doğum gününde aç</h3>
+                    <div class="env-status">mektubu oku ✨</div>
+                </div>
+                <div class="letter-envelope" data-letter="future">
+                    <div class="env-icon">🕊️</div>
+                    <h3>geleceğe dair umutsuz hissedince aç</h3>
+                    <div class="env-status">mektubu oku ✨</div>
+                </div>
+            </div>
+
+            <!-- Mektup Açılma Modalı -->
+            <div class="letter-modal-backdrop" id="letterModal">
+                <div class="letter-modal-paper">
+                    <button class="letter-modal-close" id="letterModalClose" aria-label="kapat">&times;</button>
+                    <h3 id="letterModalTitle">Mektup Başlığı</h3>
+                    <p id="letterModalBody">Mektup içeriği burada görünecektir...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. SANA ÖZEL YILDIZ HARİTASI -->
+        <section id="star-map">
+            <div class="eyebrow">gökyüzümüz</div>
+            <h2>sana özel yıldız haritası</h2>
+            <p class="lead">bizim için unutulmaz bir tarihin gökyüzü görünümü ve yıldızları. o an gökyüzü sadece bizim için parlıyordu.</p>
+
+            <div class="sky-map-card">
+                <div class="sky-controls">
+                    <input type="date" id="skyDateInput" value="2024-05-18">
+                    <input type="text" id="skyNoteInput" placeholder="Örn: İlk bakışmamız, kalbimin durağı..." value="Bizim tarihimiz: Yıldızların altında sen ve ben.">
+                    <button class="btn primary" id="skyUpdateBtn" style="padding: 8px 16px;">gökyüzünü yenile</button>
+                </div>
+
+                <div class="sky-canvas-wrapper">
+                    <canvas id="skyCanvas" width="300" height="300"></canvas>
+                </div>
+
+                <div class="sky-info-badge">
+                    <div class="sky-date" id="skyDateDisplay">18 Mayıs 2024</div>
+                    <div class="sky-note" id="skyNoteDisplay">"Bizim tarihimiz: Yıldızların altında sen ve ben."</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. KAVUŞMA SAYACI -->
+        <section id="countdown">
+            <div class="eyebrow">zamana inat</div>
+            <h2>kavuşma sayacı</h2>
+            <p class="lead">bir sonraki buluşmamıza, yıl dönümümüze veya özel bir ana kalan vakit. her saniye seni bana biraz daha yaklaştırıyor.</p>
+
+            <div class="countdown-card">
+                <h3 id="countdownTitle" style="color:var(--ink); font-family:'Cormorant Garamond',serif; margin:0 0 10px 0; font-size:1.4rem;">Gelecek Buluşmamıza Kalan Süre</h3>
+                
+                <div class="countdown-timer">
+                    <div class="countdown-box">
+                        <span class="count-num" id="countDays">00</span>
+                        <span class="count-lbl">GÜN</span>
+                    </div>
+                    <div class="countdown-box">
+                        <span class="count-num" id="countHours">00</span>
+                        <span class="count-lbl">SAAT</span>
+                    </div>
+                    <div class="countdown-box">
+                        <span class="count-num" id="countMins">00</span>
+                        <span class="count-lbl">DAKİKA</span>
+                    </div>
+                    <div class="countdown-box">
+                        <span class="count-num" id="countSecs">00</span>
+                        <span class="count-lbl">SANİYE</span>
+                    </div>
+                </div>
+
+                <div class="countdown-message" id="countdownMessage">
+                    🎉 Vakit geldi! Sonunda kavuştuk, iyi ki varsın Hayriye! Seni çok seviyorum. ❤️
+                </div>
+
+                <div class="countdown-picker">
+                    <label style="font-size:0.85rem; color:var(--ink-dim);">Hedef Tarih:</label>
+                    <input type="datetime-local" id="countdownDateInput">
+                    <button class="btn" id="saveCountdownBtn" style="padding:6px 12px; font-size:0.85rem;">tarihi güncelle</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. İKİ KİŞİLİK DİJİTAL KAVANOZ -->
+        <section id="digital-jar">
+            <div class="eyebrow">ortak hafızamız</div>
+            <h2>iki kişilik dijital kavanoz</h2>
+            <p class="lead">ikimiz için anılar, dilekler veya küçük sırlar. kavanoza bir not at, dilediğinde rastgele bir anı çekip oku.</p>
+
+            <div class="jar-container">
+                <div class="jar-visual-wrapper" id="jarPickBtn" title="Kavanozdan rastgele bir not çek!">
+                    <div class="jar-papers-preview" id="jarMiniPapers"></div>
+                </div>
+                <p style="text-align:center; font-size:0.8rem; color:var(--lamp-glow); margin-top:-10px; margin-bottom:18px;">(kavanoza tıklayarak rastgele bir anı/not çekebilirsin)</p>
+
+                <div class="jar-controls">
+                    <div class="jar-author-select">
+                        <button type="button" class="jar-author-btn active" data-author="Hayriye">Hayriye</button>
+                        <button type="button" class="jar-author-btn" data-author="Cuma">Cuma</button>
+                    </div>
+                    <textarea class="jar-textarea" id="jarNoteInput" placeholder="Kavanoza bırakmak istediğin bir anı, dilek ya da sevgi notu yaz..."></textarea>
+                    <div class="jar-actions">
+                        <button class="btn primary" id="jarAddBtn">kavanoza at</button>
+                        <button class="btn" id="jarDrawRandomBtn">rastgele çek</button>
+                    </div>
+                </div>
+
+                <div class="jar-notes-list" id="jarNotesList"></div>
+
+                <div class="jar-sync-badge">
+                    <span class="jar-sync-indicator" id="jarSyncIndicator"></span>
+                    <span id="jarSyncText">Ortak Hafıza (Bulut & Yerel Depolama)</span>
+                    <button class="jar-sync-settings-toggle" id="jarConfigToggle">Supabase/Firebase Ayarı</button>
+                </div>
+
+                <div class="jar-config-panel" id="jarConfigPanel">
+                    <p style="font-size:0.8rem; color:var(--ink-dim); margin:0 0 8px 0;">GitHub Pages statik olduğu için iki ayrı telefondan anlık ortak veri paylaşımı için ücretsiz Supabase veya Firebase REST URL'si kullanabilirsiniz:</p>
+                    <input type="text" id="syncRestUrl" placeholder="Supabase Rest URL veya Firebase DB URL (opsiyonel)">
+                    <input type="password" id="syncApiKey" placeholder="API Key / Token (opsiyonel)">
+                    <button class="btn" id="saveSyncConfigBtn" style="padding:4px 10px; font-size:0.8rem;">bağlantıyı kaydet</button>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>bu köşe senin için yapıldı Hayriye<span class="heart"></span></p>
+            <p id="footNote">canın her sıkıldığında buraya dönebilirsin.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        /* ============================================================
+           BURAYI DÜZENLE: sevgilinin adını buraya yaz (boş bırakırsan
+           sitede isim kullanılmadan geçer).
+           ============================================================ */
+        const HER_NAME = ""; // örn: "Ayşe"
+
+        /* ---------- yıldızlar ---------- */
+        (function () {
+            const container = document.getElementById('stars');
+            const count = 60;
+            for (let i = 0; i < count; i++) {
+                const s = document.createElement('span');
+                s.style.left = Math.random() * 100 + 'vw';
+                s.style.top = Math.random() * 100 + 'vh';
+                s.style.animationDelay = (Math.random() * 4) + 's';
+                s.style.opacity = (0.2 + Math.random() * 0.6).toFixed(2);
+                container.appendChild(s);
+            }
+        })();
+
+        /* ---------- beta balıkları (arka planda yüzen) ---------- */
+        (function () {
+            const canvas = document.getElementById('bettaCanvas');
+            const ctx = canvas.getContext('2d');
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            let W, H, DPR;
+
+            function resize() {
+                DPR = Math.min(window.devicePixelRatio || 1, 2);
+                W = window.innerWidth;
+                H = window.innerHeight;
+                canvas.width = W * DPR;
+                canvas.height = H * DPR;
+                canvas.style.width = W + 'px';
+                canvas.style.height = H + 'px';
+                ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Balık paletleri (RGB) — her renk 1 saniyede bir yumuşakça değişiyor
+            const palettes = [
+                { r: 244, g: 199, b: 107 }, // lamba altını
+                { r: 242, g: 166, b: 173 }, // gül pembesi
+                { r: 201, g: 167, b: 240 }, // yumuşak mor
+                { r: 173, g: 232, b: 244 }, // buz mavisi
+                { r: 180, g: 240, b: 190 }, // nane yeşili
+                { r: 255, g: 182, b: 220 }, // bebek pembesi
+                { r: 232, g: 230, b: 245 }  // yıldız beyazı
+            ];
+
+            function lerp(a, b, t) { return a + (b - a) * t; }
+            function lerpPalette(a, b, t) {
+                return {
+                    r: Math.round(lerp(a.r, b.r, t)),
+                    g: Math.round(lerp(a.g, b.g, t)),
+                    b: Math.round(lerp(a.b, b.b, t))
+                };
+            }
+            function rgba(c, a) { return `rgba(${c.r},${c.g},${c.b},${a})`; }
+
+            function makeFish(i) {
+                const idx = Math.floor(Math.random() * palettes.length);
+                return {
+                    x: Math.random() * W,
+                    y: 60 + Math.random() * (H - 120),
+                    baseY: 0,
+                    size: 22 + Math.random() * 16,
+                    speed: 0.25 + Math.random() * 0.35,
+                    dir: Math.random() < 0.5 ? 1 : -1,
+                    phase: Math.random() * Math.PI * 2,
+                    bobFreq: 0.0006 + Math.random() * 0.0004,
+                    bobAmp: 14 + Math.random() * 18,
+                    tailPhase: Math.random() * Math.PI * 2,
+                    paletteA: palettes[idx],
+                    paletteB: palettes[(idx + 1) % palettes.length],
+                    paletteIndex: idx,
+                    paletteStart: performance.now() + Math.random() * 1000,
+                    glowPhase: Math.random() * Math.PI * 2
+                };
+            }
+
+            const FISH_COUNT = window.innerWidth < 640 ? 3 : 5;
+            const fishList = [];
+            for (let i = 0; i < FISH_COUNT; i++) fishList.push(makeFish(i));
+            fishList.forEach(f => f.baseY = f.y);
+
+            // Her 1 saniyede bir renk döngüsünü ilerlet
+            const PALETTE_INTERVAL = 1000;
+
+            function drawFish(f, t) {
+                const wiggle = Math.sin(t * 0.004 + f.tailPhase);
+                const s = f.size;
+                const dir = f.dir;
+
+                // Renk döngüsü: her 1 sn'de yeni palete geçer (yumuşak lerp)
+                let progress = (t - f.paletteStart) / PALETTE_INTERVAL;
+                while (progress >= 1) {
+                    f.paletteA = f.paletteB;
+                    f.paletteIndex = (f.paletteIndex + 1) % palettes.length;
+                    f.paletteB = palettes[(f.paletteIndex + 1) % palettes.length];
+                    f.paletteStart += PALETTE_INTERVAL;
+                    progress = (t - f.paletteStart) / PALETTE_INTERVAL;
+                }
+                const eased = 0.5 - 0.5 * Math.cos(Math.min(1, Math.max(0, progress)) * Math.PI);
+                const c = lerpPalette(f.paletteA, f.paletteB, eased);
+
+                // Parıldama: parlaklık nabız gibi atsın
+                const pulse = 0.75 + 0.35 * Math.sin(t * 0.005 + f.glowPhase);
+                const bodyColor = rgba(c, 1);
+                const finColor = rgba(c, 0.55);
+                const glowInner = rgba(c, Math.min(0.75, 0.4 * pulse + 0.2));
+                const glowOuter = rgba(c, 0);
+
+                ctx.save();
+                ctx.translate(f.x, f.y);
+                ctx.rotate(wiggle * 0.05);
+                ctx.scale(dir, 1);
+
+                // parlaklık (glow) — nabız gibi
+                const glowR = s * (2.4 + 0.6 * pulse);
+                const glow = ctx.createRadialGradient(0, 0, s * 0.2, 0, 0, glowR);
+                glow.addColorStop(0, glowInner);
+                glow.addColorStop(1, glowOuter);
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(0, 0, glowR, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Aynı renk ışıltısı canvas gölgesiyle daha da parıldasın
+                ctx.shadowColor = rgba(c, 0.9);
+                ctx.shadowBlur = 18 + 14 * pulse;
+
+                // kuyruk (akıcı, dalgalanan)
+                const tailWave1 = wiggle * s * 0.9;
+                const tailWave2 = Math.sin(t * 0.004 + f.tailPhase + 1.1) * s * 0.7;
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.7, 0);
+                ctx.bezierCurveTo(
+                    -s * 1.6, -s * 0.9 + tailWave1 * 0.3,
+                    -s * 2.6, -s * 1.5 + tailWave1,
+                    -s * 3.4, -s * 0.5 + tailWave1 * 1.2
+                );
+                ctx.bezierCurveTo(
+                    -s * 2.4, -s * 0.1,
+                    -s * 2.4, s * 0.1,
+                    -s * 3.4, s * 0.6 + tailWave2 * 1.2
+                );
+                ctx.bezierCurveTo(
+                    -s * 2.6, s * 1.4 + tailWave2,
+                    -s * 1.6, s * 0.8 + tailWave2 * 0.3,
+                    -s * 0.7, 0
+                );
+                ctx.closePath();
+                ctx.fillStyle = finColor;
+                ctx.fill();
+
+                // sırt yüzgeci
+                const dorsalWave = Math.sin(t * 0.005 + f.tailPhase + 0.6) * s * 0.15;
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.3, -s * 0.35);
+                ctx.quadraticCurveTo(-s * 0.9, -s * 1.1 + dorsalWave, -s * 1.5, -s * 0.5);
+                ctx.quadraticCurveTo(-s * 0.9, -s * 0.55, -s * 0.3, -s * 0.35);
+                ctx.closePath();
+                ctx.fillStyle = finColor;
+                ctx.fill();
+
+                // gövde
+                ctx.beginPath();
+                ctx.ellipse(0, 0, s * 0.75, s * 0.42, 0, 0, Math.PI * 2);
+                ctx.fillStyle = bodyColor;
+                ctx.fill();
+
+                // küçük ışıltı — daha tatlı görünsün
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.ellipse(-s * 0.15, -s * 0.15, s * 0.22, s * 0.08, -0.4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.fill();
+
+                // göz
+                ctx.beginPath();
+                ctx.arc(s * 0.42, -s * 0.06, s * 0.06, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(23,21,38,0.7)';
+                ctx.fill();
+                // göz ışıltısı
+                ctx.beginPath();
+                ctx.arc(s * 0.44, -s * 0.08, s * 0.02, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            let lastT = 0;
+            let paused = false;
+            let pauseAccum = 0;
+            let pauseStart = 0;
+
+            function animate(rawT) {
+                if (paused) return;
+                const t = rawT - pauseAccum;
+                ctx.clearRect(0, 0, W, H);
+                fishList.forEach(f => {
+                    f.x += f.speed * f.dir;
+                    f.y = f.baseY + Math.sin(t * f.bobFreq + f.phase) * f.bobAmp * 0.15 + Math.sin(t * 0.0003 + f.phase) * 8;
+
+                    if (f.x > W + s_margin(f)) { f.dir = -1; f.x = W + s_margin(f); }
+                    if (f.x < -s_margin(f)) { f.dir = 1; f.x = -s_margin(f); }
+
+                    drawFish(f, t);
+                });
+                lastT = t;
+                if (!reduceMotion) requestAnimationFrame(animate);
+            }
+            function s_margin(f) { return f.size * 3.6; }
+
+            // yön değişince baseY'yi biraz kaydırarak doğal bir rota izlensin
+            setInterval(() => {
+                if (paused) return;
+                fishList.forEach(f => {
+                    if (Math.random() < 0.4) {
+                        f.baseY = Math.min(H - 60, Math.max(60, f.baseY + (Math.random() - 0.5) * 120));
+                    }
+                });
+            }, 4000);
+
+            if (reduceMotion) {
+                // hareketi azaltma tercih edilirse balıkları tek kare olarak, sabit biçimde göster
+                fishList.forEach(f => drawFish(f, 0));
+            } else {
+                requestAnimationFrame(animate);
+            }
+
+            // Dışarıdan (play/pause butonu) çağrılabilen kontrol
+            window.__toggleFish = function () {
+                if (reduceMotion) return paused;
+                if (paused) {
+                    paused = false;
+                    const delta = performance.now() - pauseStart;
+                    pauseAccum += delta;
+                    // renk döngüsünün de duraklamış gibi devam etmesi için başlangıçları kaydır
+                    fishList.forEach(f => { f.paletteStart += delta; });
+                    requestAnimationFrame(animate);
+                } else {
+                    paused = true;
+                    pauseStart = performance.now();
+                }
+                return paused;
+            };
+        })();
+
+        /* ---------- balık animasyonu play/pause butonu ---------- */
+        (function () {
+            const btn = document.createElement('button');
+            btn.id = 'fishToggle';
+            btn.type = 'button';
+            btn.setAttribute('aria-label', 'balıkları duraklat');
+            btn.setAttribute('title', 'balıkları duraklat');
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+            document.body.appendChild(btn);
+
+            const playIcon = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+            const pauseIcon = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+
+            btn.addEventListener('click', () => {
+                if (typeof window.__toggleFish !== 'function') return;
+                const nowPaused = window.__toggleFish();
+                btn.innerHTML = nowPaused ? playIcon : pauseIcon;
+                btn.setAttribute('aria-label', nowPaused ? 'balıkları oynat' : 'balıkları duraklat');
+                btn.setAttribute('title', nowPaused ? 'balıkları oynat' : 'balıkları duraklat');
+                btn.classList.toggle('paused', nowPaused);
+            });
+        })();
+
+        /* ---------- arka plan şarkısı + ses aç/kapat ---------- */
+        (function () {
+            const audio = document.getElementById('bgSong');
+            if (!audio) return;
+            audio.volume = 0.55;
+
+            const soundOnIcon = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>';
+            const soundOffIcon = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 12A4.5 4.5 0 0 0 14 8v2.18l2.45 2.45A4.5 4.5 0 0 0 16.5 12zM19 12a7 7 0 0 1-1.11 3.77l1.46 1.46A9 9 0 0 0 21 12a9 9 0 0 0-7-8.77v2.06A7 7 0 0 1 19 12zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25a7.03 7.03 0 0 1-2.25 1.22v2.06a9 9 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
+
+            const btn = document.createElement('button');
+            btn.id = 'muteToggle';
+            btn.type = 'button';
+            btn.innerHTML = soundOnIcon;
+            btn.setAttribute('aria-label', 'sesi kapat');
+            btn.setAttribute('title', 'sesi kapat');
+            document.body.appendChild(btn);
+
+            function reflect() {
+                const muted = audio.muted || audio.paused;
+                btn.innerHTML = muted ? soundOffIcon : soundOnIcon;
+                btn.classList.toggle('muted', muted);
+                btn.setAttribute('aria-label', muted ? 'sesi aç' : 'sesi kapat');
+                btn.setAttribute('title', muted ? 'sesi aç' : 'sesi kapat');
+            }
+
+            // Eğer tarayıcı sessiz olmayan autoplay'i engellerse, kullanıcının
+            // tek tıklamayla sesi açması için görünür bir overlay buton göster.
+            const overlay = document.createElement('div');
+            overlay.id = 'autoplayOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);z-index:1000;';
+            overlay.innerHTML = '<button id="overlayPlayBtn" class="btn primary" style="padding:16px 22px;font-size:18px;">► Şarkıyı Çal</button>';
+            overlay.style.display = 'none';
+            document.body.appendChild(overlay);
+
+            // Otomatik (unmuted) oynatmayı dene; başarısız olursa overlay göster.
+            let triedAutoplay = false;
+            function tryAutoplay() {
+                if (triedAutoplay) return;
+                triedAutoplay = true;
+                audio.muted = false;
+                audio.play().then(() => {
+                    reflect();
+                    overlay.style.display = 'none';
+                }).catch(() => {
+                    // Tarayıcı engelledi: overlay ile kullanıcı etkileşimi bekle
+                    overlay.style.display = 'flex';
+                    btn.classList.add('pulse');
+                    reflect();
+                });
+            }
+
+            overlay.querySelector('#overlayPlayBtn').addEventListener('click', () => {
+                audio.muted = false;
+                audio.play().catch(() => { });
+                overlay.style.display = 'none';
+                btn.classList.remove('pulse');
+                reflect();
+            });
+
+            tryAutoplay();
+
+            btn.addEventListener('click', () => {
+                if (audio.paused) {
+                    audio.muted = false;
+                    audio.play().catch(() => { });
+                } else {
+                    audio.muted = !audio.muted;
+                }
+                if (!audio.muted) {
+                    btn.classList.remove('pulse');
+                }
+                reflect();
+            });
+
+            // İlk kullanıcı etkileşimi gelince overlay varsa dene tekrar (uygulama uyumu için)
+            function firstGesture() {
+                if (overlay.style.display === 'flex') {
+                    overlay.style.display = 'none';
+                    audio.muted = false;
+                    audio.play().catch(() => { });
+                    btn.classList.remove('pulse');
+                    reflect();
+                }
+            }
+            window.addEventListener('pointerdown', firstGesture, { once: true });
+            window.addEventListener('keydown', firstGesture, { once: true });
+        })();
+
+        /* ---------- selamlama (saate göre) ---------- */
+        (function () {
+            const hour = new Date().getHours();
+            let greet, sub;
+            const name = HER_NAME ? HER_NAME : "";
+            if (hour >= 5 && hour < 12) { greet = "günaydın" + (name ? " " + name : ""); sub = "güne güzel başlamanı diliyorum."; }
+            else if (hour >= 12 && hour < 18) { greet = "Merhaba Hayriye" + (name ? " " + name : ""); sub = "günün ortasında küçük bir mola."; }
+            else if (hour >= 18 && hour < 23) { greet = "Merhaba Hayriye" + (name ? " " + name : ""); sub = "günü geride bıraktın, biraz nefeslen."; }
+            else { greet = "iyi geceler" + (name ? " " + name : ""); sub = "uyumadan önce buraya uğradığın için mutluyum."; }
+            document.getElementById('greeting').textContent = greet;
+            document.getElementById('subgreeting').textContent = sub;
+        })();
+
+        /* ---------- lamba ---------- */
+        const lampScene = document.getElementById('lampScene');
+        function toggleLamp() { lampScene.classList.remove('igniting'); lampScene.classList.toggle('lit'); }
+        lampScene.addEventListener('click', toggleLamp);
+        lampScene.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLamp(); } });
+        // Sayfa açıldığında lamba yavaşça yansın
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                lampScene.classList.add('igniting');
+                lampScene.classList.add('lit');
+            }, 600);
+        });
+
+                /* ---------- mood ---------- */
+                const moodMessages = {
+                    uzgunum: [
+                        "Bugün sana biraz daha yakın olmak isterdim.",
+                        "Konuşmasan da olur. Sessizliğine de eşlik ederim.",
+                        "Kalbin bugün biraz ağır geliyor gibi.",
+                        "Keşke canını acıtan her şeyden önce bana rastlasaydın."
+                    ],
+                    yorgunum: [
+                        "Başını omzuma bıraksan, gerisini hiç konuşmayız.",
+                        "Bugün hiçbir şey yapmak zorunda değilsin.",
+                        "Biraz dinlen... Ben buradayım.",
+                        "Dünya biraz beklesin. Sen sadece nefes al."
+                    ],
+                    sikildim: [
+                        "Canın neye sıkılırsa bana sığın sevgilim; seninle yan yana susmak bile dünyanın en güzel şiirini dinlemek gibi.",
+                        "O güzel yüzüne konan tek bir tebessüm olmak, dünyadaki bütün hazinelerden daha kıymetli benim için.",
+                        "Dünyanın tüm kalabalığı bir yana, insan bazen sadece sevdiğinin kokusuna sığınıp ruhunu dinlendirmek istiyor... Ben hep seninleyim Hayriye'm.",
+                        "Buradayım... Acelemiz yok."
+                    ],
+                    mutluyum: [
+                        "Gülüşünü hiç eksiltme olur mu?",
+                        "Bugün iyi olman içimi de hafifletti.",
+                        "Mutluluğun bana da dokunuyor.",
+                        "Sana en çok bu hâlin yakışıyor."
+                    ],
+                    utaniyorum: [
+                        "Gözlerini kaçırınca daha da güzelleşiyorsun.",
+                        "Sana bu utangaç hâlin çok yakışıyor.",
+                        "Biraz daha utanırsan ben de sana bakmaya devam ederim.",
+                        "Gülümsemeni yakaladım, kaçamadın."
+                    ],
+                    huzurlu: [
+                        "Böyle kal... Sana en çok bu sessizlik yakışıyor.",
+                        "Dünya biraz susmuş gibi. İyi olmuş.",
+                        "Yanında olsaydım hiçbir şey söylemezdim.",
+                        "Bu anın hiç bitmesini istemedim."
+                    ],
+                    kizginim: [
+                       
+                        "Bugün biraz bana yaslan.",
+                        "Kaşlarını böyle çatınca sarılmak istiyorum.",
+                        
+                    ],
+                    heyecanli: [
+                        "Kalbinin sesini buradan bile duyabiliyorum.",
+                        "İçindeki heyecan gözlerine kadar ulaşmış.",
+                        "Bugün içinde ışıldayan bir şey var.",
+                        "Bu hâlin çok hoşuma gitti."
+                    ],
+                    // preserve other moods if present
+                    sarilmak: [
+                        "Kollarımın arasında kaybolmanı, kalbimin sadece senin için attığını teninde hissetmeni öyle çok istiyorum ki...",
+                        "Sana öyle sımsıkı sarılmak istiyorum ki, aramızdan rüzgâr bile geçemesin bir tanem.",
+                        "Gözlerini kapat ve başını göğsüme yasla; dünyanın bütün fırtınası kollarımda dursun..."
+                    ],
+                    yaramaz: [
+                      
+                        "aa, bugün öyle bir gündeyiz demek. dikkat et, ben de yaramaz olabiliyorum. 😌",
+                        "yaramazlığın bana da bulaştı, sen sorumlusun bundan. :)",
+                    ]
+                };
+        const moodButtons = document.querySelectorAll('[data-mood]');
+        const moodResponse = document.getElementById('moodResponse');
+        moodButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                moodButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const list = moodMessages[btn.dataset.mood];
+                const msg = list[Math.floor(Math.random() * list.length)];
+                moodResponse.classList.remove('show');
+                setTimeout(() => {
+                    moodResponse.textContent = msg;
+                    moodResponse.classList.add('show');
+                }, 120);
+            });
+        });
+
+        /* ---------- aşk falı (tarot) ---------- */
+        /* BURAYI DÜZENLE: kartları çoğaltabilir, isim/anlamlarını değiştirebilir,
+           MAX_CARDS ile aynı seansta çekilebilecek kart sayısını ayarlayabilirsin. */
+        const MAX_CARDS = 5;
+
+        /* kartlar kapalıyken görünen arka yüz emojileri - her kart çekildiğinde
+           rastgele biri seçilir, sadece süs amaçlıdır, kartın kimliğini ele vermez */
+        const BACK_EMOJIS = ['✨', '🌙', '🔮', '⭐', '🌌'];
+
+        /* Büyük Arkana (Major Arcana) - 22 kart */
+        const MAJOR_ARCANA = [
+            { name: "0 · Deli", emoji: "🌄", meaning: "yeni bir başlangıç kapında. kalbini nereye götüreceğini bilmesen de, bu maceraya çıkmaya değer." },
+            { name: "I · Büyücü", emoji: "🪄", meaning: "elindeki tüm imkanları kullanma vaktin geldi. bu aşk için ne gerekiyorsa, zaten içinde taşıyorsun." },
+            { name: "II · Başrahibe", emoji: "🔮", meaning: "sözlerin ötesinde bir bağ var aranızda. sezgilerine güven, kalbin zaten biliyor." },
+            { name: "III · İmparatoriçe", emoji: "🌸", meaning: "bu sevgi bereketli topraklar gibi. şefkatinle büyüttüğün her şey çiçek açıyor." },
+            { name: "IV · İmparator", emoji: "👑", meaning: "aranızda sağlam bir düzen var. güven, bu ilişkinin en sağlam temeli." },
+            { name: "V · Aziz", emoji: "📿", meaning: "paylaştığınız değerler sizi birbirine bağlıyor. bu, gelenekten çok ortak bir inanç." },
+            { name: "VI · Âşıklar", emoji: "💑", meaning: "bu, kalbinin yaptığı bir seçim. doğru seçim, çünkü onunla uyum içindesin." },
+            { name: "VII · Savaş Arabası", emoji: "🏇", meaning: "birlikte aynı yöne ilerliyorsunuz. kararlılığınız sizi çok ileriye taşıyacak." },
+            { name: "VIII · Güç", emoji: "🦁", meaning: "bu aşk için sabırlısın, cesursun. yumuşaklığın aslında en büyük gücün." },
+            { name: "IX · Ermiş", emoji: "🏮", meaning: "bazen sevmek, önce kendini tanımaktan geçer. bu içe dönüş, ilişkini de aydınlatacak." },
+            { name: "X · Kader Çarkı", emoji: "🎡", meaning: "hayat döngüler halinde ilerliyor. şu an neredeyse olursa olsun, bu aşk sizi doğru yere taşıyor." },
+            { name: "XI · Adalet", emoji: "⚖️", meaning: "aranızdaki denge ve doğruluk, bu bağı ayakta tutan şey. birbirinize adil davranıyorsunuz." },
+            { name: "XII · Asılan Adam", emoji: "🙃", meaning: "bazen beklemek de bir sevgi biçimidir. sabrın, bu ilişkiye farklı bir bakış açısı katıyor." },
+            { name: "XIII · Ölüm", emoji: "🦋", meaning: "bir şey bitiyor ki yenisi başlasın. bu dönüşüm, aşkınızı daha güçlü bir hale getirecek." },
+            { name: "XIV · Denge", emoji: "🕊️", meaning: "birbirinizi tamamlıyorsunuz. bu uyum, sabırla ve ölçüyle örülmüş." },
+            { name: "XV · Şeytan", emoji: "⛓️", meaning: "bazen bağlılık, bağımlılıkla karışabilir. kendine ve ona alan tanımayı unutma." },
+            { name: "XVI · Kule", emoji: "⚡", meaning: "beklenmedik bir şey sarsabilir seni ama yıkılan her şey, daha sağlamını kurmak için yer açar." },
+            { name: "XVII · Yıldız", emoji: "⭐", meaning: "en karanlık gecede bile parlayan bir umut var. bu aşk, sana ilham ve iyileşme getiriyor." },
+            { name: "XVIII · Ay", emoji: "🌙", meaning: "belirsizlik hissedebilirsin ama korkma. sezgilerin, karanlıkta bile sana yol gösteriyor." },
+            { name: "XIX · Güneş", emoji: "☀️", meaning: "mutluluk üzerinde parlıyor. bu aşk, hayatına canlılık ve neşe katıyor." },
+            { name: "XX · Mahkeme", emoji: "📯", meaning: "bir uyanış anındasın. geçmişle hesaplaşıp bu aşka yeniden, daha bilinçli başlıyorsun." },
+            { name: "XXI · Dünya", emoji: "🌍", meaning: "bir döngü tamamlandı. bu aşk, kendi içinde bütün ve tam." }
+        ];
+
+        /* Küçük Arkana (Minor Arcana) - 4 seri x 14 kart = 56 kart.
+           her seri kendi temasıyla, her rütbe (As...Kral) kendi anlamıyla
+           birleşip tek satırlık bir yorum oluşturuyor. */
+        const SUITS = [
+            { name: "Değnekler", emoji: "🔥", theme: "tutku ve cesaret" },
+            { name: "Kupalar", emoji: "💧", theme: "duygular ve bağ" },
+            { name: "Kılıçlar", emoji: "🗡️", theme: "düşünceler ve sözler" },
+            { name: "Tılsımlar", emoji: "🪙", theme: "emek ve güven" }
+        ];
+
+        const RANKS = [
+            { label: "As", phrase: t => `yeni bir enerjinin doğuşu. ${t} tarafında taze bir başlangıç kapını çalıyor.` },
+            { label: "İki", phrase: t => `bir denge anı. ${t} konusunda iki yönü bir arada tutmayı öğreniyorsun.` },
+            { label: "Üç", phrase: t => `ilk meyveler görünüyor. ${t} tarafında emeğin karşılığını vermeye başlıyor.` },
+            { label: "Dört", phrase: t => `sağlam bir temel. ${t} konusunda huzur ve istikrar hissediyorsun.` },
+            { label: "Beş", phrase: t => `küçük bir zorluk. ${t} tarafında sabrın sınanıyor ama geçici bu.` },
+            { label: "Altı", phrase: t => `iyileşme ve uyum. ${t} konusunda işler yeniden yoluna giriyor.` },
+            { label: "Yedi", phrase: t => `sabır ve azim gerekiyor. ${t} tarafında pes etmemek seni hedefe taşıyor.` },
+            { label: "Sekiz", phrase: t => `hız kazanıyorsun. ${t} konusunda hareketlilik ve ilerleme var.` },
+            { label: "Dokuz", phrase: t => `neredeyse tamamlandı. ${t} tarafında son bir çaba seni hedefe ulaştırıyor.` },
+            { label: "On", phrase: t => `bir döngü tamamlanıyor. ${t} konusunda olgunluğa erişiyorsun, yeni bir başlangıca hazırsın.` },
+            { label: "Vale", phrase: t => `taze bir merak. ${t} tarafında öğrenmeye ve keşfetmeye açık bir enerji taşıyorsun.` },
+            { label: "Şövalye", phrase: t => `harekete geçme zamanı. ${t} konusunda cesur bir adım atıyorsun.` },
+            { label: "Kraliçe", phrase: t => `olgun bir sezgi. ${t} tarafında içgüdülerin sana doğru yolu gösteriyor.` },
+            { label: "Kral", phrase: t => `ustalık ve sorumluluk. ${t} konusunda güçlü ve dengeli duruyorsun.` }
+        ];
+
+        const MINOR_ARCANA = [];
+        SUITS.forEach(suit => {
+            RANKS.forEach(rank => {
+                MINOR_ARCANA.push({
+                    name: rank.label + " " + suit.name,
+                    emoji: suit.emoji,
+                    meaning: rank.phrase(suit.theme)
+                });
+            });
+        });
+
+        /* tam deste: 22 Büyük Arkana + 56 Küçük Arkana = 78 kart */
+        const TAROT_DECK = [...MAJOR_ARCANA, ...MINOR_ARCANA];
+
+        const TAROT_CONNECTORS = ["ayrıca, ", "bununla birlikte, ", "bir de, ", "üstüne üstlük, ", "hepsinin ötesinde, "];
+
+        let tarotDrawn = [];
+        let tarotRevealed = [];
+        let tarotRemaining = [];
+
+        const tarotDeckEl = document.getElementById('tarotDeck');
+        const tarotHintEl = document.getElementById('tarotHint');
+        const tarotCardsEl = document.getElementById('tarotCards');
+        const tarotDrawBtn = document.getElementById('tarotDrawBtn');
+        const tarotResetBtn = document.getElementById('tarotResetBtn');
+        const tarotInterpretationEl = document.getElementById('tarotInterpretation');
+        const tarotInterpretationTitleEl = document.getElementById('tarotInterpretationTitle');
+        const tarotInterpretationBodyEl = document.getElementById('tarotInterpretationBody');
+
+        function shuffledDeck() {
+            const arr = [...TAROT_DECK];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        tarotRemaining = shuffledDeck();
+
+        function randomBackEmoji() {
+            return BACK_EMOJIS[Math.floor(Math.random() * BACK_EMOJIS.length)];
+        }
+
+        function updateInterpretation() {
+            if (tarotRevealed.length === 0) {
+                tarotInterpretationEl.style.display = 'none';
+                return;
+            }
+            const names = tarotRevealed.map(c => c.name).join(', ');
+            const body = tarotRevealed.map((c, i) => (i === 0 ? c.meaning : TAROT_CONNECTORS[(i - 1) % TAROT_CONNECTORS.length] + c.meaning)).join(' ');
+            tarotInterpretationTitleEl.textContent = names;
+            tarotInterpretationBodyEl.textContent = body;
+            tarotInterpretationEl.style.display = 'block';
+        }
+
+        function drawCard() {
+            if (tarotDrawn.length >= MAX_CARDS) return;
+            if (tarotRemaining.length === 0) tarotRemaining = shuffledDeck();
+            const card = tarotRemaining.pop();
+            tarotDrawn.push(card);
+
+            const cardEl = document.createElement('div');
+            cardEl.className = 'tarot-card';
+            cardEl.setAttribute('role', 'button');
+            cardEl.setAttribute('tabindex', '0');
+            cardEl.setAttribute('aria-label', 'kartı çevirmek için dokun');
+            cardEl.innerHTML =
+                '<div class="tarot-card-inner">' +
+                '<div class="tarot-card-face tarot-card-front">' +
+                '<span class="card-emoji">' + card.emoji + '</span>' +
+                '<div class="tarot-card-name">' + card.name + '</div>' +
+                '<div class="tarot-card-meaning">' + card.meaning + '</div>' +
+                '</div>' +
+                '<div class="tarot-card-face tarot-card-back">' +
+                '<span class="card-emoji">' + randomBackEmoji() + '</span>' +
+                '<div class="tarot-card-flip-hint">çevirmek için dokun</div>' +
+                '</div>' +
+                '</div>';
+
+            function revealCard() {
+                if (cardEl.classList.contains('flipped')) return;
+                cardEl.classList.add('flipped');
+                tarotRevealed.push(card);
+                updateInterpretation();
+            }
+            cardEl.addEventListener('click', revealCard);
+            cardEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealCard(); } });
+
+            tarotCardsEl.appendChild(cardEl);
+
+            if (tarotDrawn.length >= MAX_CARDS) {
+                tarotHintEl.textContent = "en fazla " + MAX_CARDS + " kart çekebilirsin. baştan başlayabilirsin.";
+                tarotDrawBtn.style.display = 'none';
+                tarotDeckEl.classList.add('maxed');
+                tarotResetBtn.style.display = 'inline-flex';
+            } else {
+                tarotHintEl.textContent = "bir kart daha çekebilirsin (" + tarotDrawn.length + "/" + MAX_CARDS + ")";
+                tarotResetBtn.style.display = 'inline-flex';
+            }
+        }
+
+        function resetTarot() {
+            tarotDrawn = [];
+            tarotRevealed = [];
+            tarotRemaining = shuffledDeck();
+            tarotCardsEl.innerHTML = '';
+            tarotInterpretationEl.style.display = 'none';
+            tarotHintEl.textContent = 'desteye dokun, ilk kartını çek';
+            tarotDrawBtn.style.display = 'inline-flex';
+            tarotDeckEl.classList.remove('maxed');
+            tarotResetBtn.style.display = 'none';
+        }
+
+        tarotDeckEl.addEventListener('click', drawCard);
+        tarotDeckEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drawCard(); } });
+        tarotDrawBtn.addEventListener('click', drawCard);
+        tarotResetBtn.addEventListener('click', resetTarot);
+
+        /* ---------- müzik oynatıcı ---------- */
+        /* şarkılar hiçbir yere yüklenmiyor / gönderilmiyor, sadece bu sekmede
+           tarayıcı belleğinde tutuluyor. sayfa yenilenince listeden gider. */
+        const musicFileInput = document.getElementById('musicFileInput');
+        const musicEmpty = document.getElementById('musicEmpty');
+        const playlistEl = document.getElementById('playlist');
+        const playerCard = document.getElementById('playerCard');
+        const nowPlayingEl = document.getElementById('nowPlaying');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const seekBar = document.getElementById('seekBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        const volumeBar = document.getElementById('volumeBar');
+
+        let tracks = []; // { name, url }
+        let currentIndex = -1;
+
+        audioPlayer.volume = 0.8;
+
+        function formatTime(sec) {
+            if (!isFinite(sec) || sec < 0) sec = 0;
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60).toString().padStart(2, '0');
+            return m + ':' + s;
+        }
+
+        function renderPlaylist() {
+            playlistEl.innerHTML = '';
+            musicEmpty.style.display = tracks.length === 0 ? 'block' : 'none';
+            tracks.forEach((track, i) => {
+                const li = document.createElement('li');
+                if (i === currentIndex) li.classList.add('playing');
+                li.innerHTML =
+                    '<span class="track-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>' +
+                    '<span class="track-name">' + track.name + '</span>' +
+                    '<button class="track-remove" aria-label="listeden çıkar">✕</button>';
+                li.querySelector('.track-name').addEventListener('click', () => playTrack(i));
+                li.querySelector('.track-icon').addEventListener('click', () => playTrack(i));
+                li.querySelector('.track-remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeTrack(i);
+                });
+                playlistEl.appendChild(li);
+            });
+        }
+
+        function playTrack(i) {
+            if (i < 0 || i >= tracks.length) return;
+            currentIndex = i;
+            const track = tracks[i];
+            audioPlayer.src = track.url;
+            audioPlayer.play();
+            nowPlayingEl.textContent = track.name;
+            playerCard.style.display = 'flex';
+            renderPlaylist();
+        }
+
+        function removeTrack(i) {
+            const wasPlaying = i === currentIndex;
+            URL.revokeObjectURL(tracks[i].url);
+            tracks.splice(i, 1);
+            if (wasPlaying) {
+                audioPlayer.pause();
+                audioPlayer.src = '';
+                currentIndex = -1;
+                nowPlayingEl.textContent = '—';
+                playerCard.style.display = tracks.length ? 'flex' : 'none';
+            } else if (i < currentIndex) {
+                currentIndex -= 1;
+            }
+            renderPlaylist();
+        }
+
+        musicFileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || []);
+            files.forEach(file => {
+                tracks.push({ name: file.name.replace(/\.[^/.]+$/, ''), url: URL.createObjectURL(file) });
+            });
+            renderPlaylist();
+            if (currentIndex === -1 && tracks.length) {
+                playTrack(0);
+            }
+            musicFileInput.value = '';
+        });
+
+        playPauseBtn.addEventListener('click', () => {
+            if (currentIndex === -1 && tracks.length) {
+                playTrack(0);
+                return;
+            }
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+            } else {
+                audioPlayer.pause();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (!tracks.length) return;
+            const i = currentIndex <= 0 ? tracks.length - 1 : currentIndex - 1;
+            playTrack(i);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (!tracks.length) return;
+            const i = currentIndex >= tracks.length - 1 ? 0 : currentIndex + 1;
+            playTrack(i);
+        });
+
+        audioPlayer.addEventListener('play', () => {
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+        });
+        audioPlayer.addEventListener('pause', () => {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+        });
+        audioPlayer.addEventListener('ended', () => {
+            if (tracks.length > 1) {
+                nextBtn.click();
+            } else {
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+            }
+        });
+        audioPlayer.addEventListener('timeupdate', () => {
+            if (!isFinite(audioPlayer.duration)) return;
+            seekBar.max = Math.floor(audioPlayer.duration);
+            seekBar.value = Math.floor(audioPlayer.currentTime);
+            currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+            durationEl.textContent = formatTime(audioPlayer.duration);
+        });
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            seekBar.max = Math.floor(audioPlayer.duration || 0);
+            durationEl.textContent = formatTime(audioPlayer.duration);
+        });
+
+        seekBar.addEventListener('input', () => {
+            audioPlayer.currentTime = Number(seekBar.value);
+        });
+
+        volumeBar.addEventListener('input', () => {
+            audioPlayer.volume = Number(volumeBar.value) / 100;
+        });
+
+        /* ---------- defter (kaydedilmez, sadece anlık tepki) ---------- */
+        const journalReplies = [
+            "ben seni dinlemek ve yanında olmak için burada olacagım yazılımcı sözü.",
+            "bunu buraya bırakman bile bir adım. teşekkür ederim paylaştığın için.",
+            "yazdıkların bir yere gitmedi ama ben burada, dinliyorum.",
+            "içini döktüğün için iyi hissetmeni umuyorum."
+        ];
+        document.getElementById('journalBtn').addEventListener('click', () => {
+            const text = document.getElementById('journalInput').value.trim();
+            const replyEl = document.getElementById('journalReply');
+            if (text.length === 0) {
+                replyEl.textContent = "henüz bir şey yazmadın ama istersen sadece burada oturabilirsin de.";
+            } else {
+                replyEl.textContent = journalReplies[Math.floor(Math.random() * journalReplies.length)];
+            }
+            replyEl.style.display = 'block';
+        });
+            /* ============================================================
+           2. AÇILMAYI BEKLEYEN MEKTUPLAR
+           ============================================================ */
+        (function () {
+            const lettersData = {
+                "miss": {
+                    title: "Beni Özlediğinde Aç...",
+                    body: "Güzelim Hayriye,\n\nEğer şu an bu mektubu açıyorsan, aramızdaki mesafelerin veya geçen saatlerin ağırlığını hissediyorsun demektir.\n\nBilmeni isterim ki; sen beni ne zaman özlersen, ben o an seni iki katı özlüyorumdur. Gözlerini kapat ve bir anlığına yanındaymışım gibi derin bir nefes al. Sana sarıldığımı, kokunu içime çektiğimi ve kulağına her şeyin yolunda olduğunu fısıldadığımı hisset.\n\nBizim kalplerimiz birbirine görünmez bağlarla düğümlü. Aklımdasın, duamdasın, her an yanımdasın.\n\nSeni çok özleyen sevgilin..."
+                },
+                "bad-day": {
+                    title: "Kötü Bir Gün Geçirdiğinde Aç...",
+                    body: "Bir tanem Hayriye,\n\nBugün her şey üst üste gelmiş, canın sıkılmış ya da dünya seni biraz yormuş olabilir. Önce omuzlarını serbest bırak, derin bir nefes al.\n\nBugünün kötü geçmiş olması, hayatının kötü olduğu anlamına gelmez. Sen benim tanıdığım en güçlü, en zarif ve en temiz kalpli insansın. Birkaç pürüzün senin o güzel ışığını söndürmesine izin verme.\n\nBen her zaman senin arkandayım. İster sabaha kadar anlat dinleyeyim, istersen tek kelime etme yanında sessizce durayım.\n\nGeçecek sevgilim, bu gün de geçecek ve yarın yine senin gibi güzel doğacak güneş."
+                },
+                "birthday": {
+                    title: "Doğum Gününde Aç... 🎂",
+                    body: "İyi ki doğdun Hayriye'm, iyi ki varsın!\n\nDünyaya gelişinle birlikte, bir gün benim hayatıma da en büyük güzellik olarak gireceğini biliyor muydun acaba?\n\nSenin varlığın benim dünyamı aydınlatan en sıcak güneş, yolumu bulan en parlak yıldız. Yeni yaşın sana kalbindeki bütün dilekleri, tükenmeyen kahkahaları ve sonsuz huzuru getirsin. Ve en çok da; her yeni yaşında ellerimiz birbirine sımsıkı kenetli olsun.\n\nDoğum günün kutlu olsun her şeyim, nice mutlu ve beraber yıllarımıza!"
+                },
+                "future": {
+                    title: "Geleceğe Dair Umutsuz Hissettiğinde Aç...",
+                    body: "Canım Hayriye,\n\nBazen gelecek belirsiz gelir, insan nereye yürüdüğünü bilemez. Ama unutma ki, yarınların ne getireceğini bilemesek de bir şeyi çok iyi biliyoruz: Biz birbirimizin elini asla bırakmayacağız.\n\nBirlikte kuracağımız bir yuva, içeceğimiz sıcak bir çay, kahkahalarla hatırlayacağımız günler var önümüzde. Umutsuzluğa kapıldığında beni düşün, birbirimize verdiğimiz sözleri hatırla.\n\nSen ve ben bir aradayken, aşamayacağımız hiçbir fırtına yok."
+                }
+            };
+
+            const envelopes = document.querySelectorAll(".letter-envelope");
+            const modal = document.getElementById("letterModal");
+            const modalClose = document.getElementById("letterModalClose");
+            const modalTitle = document.getElementById("letterModalTitle");
+            const modalBody = document.getElementById("letterModalBody");
+
+            envelopes.forEach(env => {
+                env.addEventListener("click", () => {
+                    const key = env.getAttribute("data-letter");
+                    const data = lettersData[key];
+                    if (data) {
+                        modalTitle.textContent = data.title;
+                        modalBody.textContent = data.body;
+                        modal.classList.add("active");
+                    }
+                });
+            });
+
+            function closeModal() {
+                modal.classList.remove("active");
+            }
+
+            modalClose.addEventListener("click", closeModal);
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) closeModal();
+            });
+        })();
+
+        /* ============================================================
+           3. SANA ÖZEL YILDIZ HARİTASI
+           ============================================================ */
+        (function () {
+            const canvas = document.getElementById("skyCanvas");
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            const dateInput = document.getElementById("skyDateInput");
+            const noteInput = document.getElementById("skyNoteInput");
+            const updateBtn = document.getElementById("skyUpdateBtn");
+            const dateDisplay = document.getElementById("skyDateDisplay");
+            const noteDisplay = document.getElementById("skyNoteDisplay");
+
+            const savedSkyDate = localStorage.getItem("hayriye_sky_date") || "2024-05-18";
+            const savedSkyNote = localStorage.getItem("hayriye_sky_note") || "Bizim tarihimiz: Yıldızların altında sen ve ben.";
+            dateInput.value = savedSkyDate;
+            noteInput.value = savedSkyNote;
+
+            function pseudoRandom(seed) {
+                const x = Math.sin(seed++) * 10000;
+                return x - Math.floor(x);
+            }
+
+            function drawStarMap(dateStr, noteStr) {
+                const d = new Date(dateStr);
+                const options = { year: "numeric", month: "long", day: "numeric" };
+                dateDisplay.textContent = isNaN(d.getTime()) ? dateStr : d.toLocaleDateString("tr-TR", options);
+                noteDisplay.textContent = '"' + (noteStr || '') + '"';
+
+                let seed = 0;
+                for (let i = 0; i < dateStr.length; i++) {
+                    seed += dateStr.charCodeAt(i) * (i + 1);
+                }
+
+                const w = canvas.width;
+                const h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                const nebulaGrad = ctx.createRadialGradient(w * 0.45, h * 0.4, 10, w * 0.5, h * 0.5, w * 0.5);
+                nebulaGrad.addColorStop(0, "rgba(102, 51, 153, 0.35)");
+                nebulaGrad.addColorStop(0.5, "rgba(30, 41, 89, 0.25)");
+                nebulaGrad.addColorStop(1, "rgba(12, 11, 23, 0)");
+                ctx.fillStyle = nebulaGrad;
+                ctx.fillRect(0, 0, w, h);
+
+                const constellationStars = [];
+                const numConstellation = 6;
+                for (let i = 0; i < numConstellation; i++) {
+                    const angle = pseudoRandom(seed + i * 7) * Math.PI * 2;
+                    const r = (pseudoRandom(seed + i * 13) * 0.35 + 0.1) * w;
+                    const cx = w / 2 + Math.cos(angle) * r;
+                    const cy = h / 2 + Math.sin(angle) * r;
+                    const brightness = pseudoRandom(seed + i * 19) * 0.5 + 0.5;
+                    const radius = pseudoRandom(seed + i * 23) * 1.5 + 1.8;
+                    constellationStars.push({ x: cx, y: cy, r: radius, b: brightness });
+                }
+
+                ctx.strokeStyle = "rgba(244, 199, 107, 0.4)";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i = 0; i < constellationStars.length - 1; i++) {
+                    ctx.moveTo(constellationStars[i].x, constellationStars[i].y);
+                    ctx.lineTo(constellationStars[i+1].x, constellationStars[i+1].y);
+                }
+                ctx.stroke();
+
+                const totalStars = 140;
+                for (let i = 0; i < totalStars; i++) {
+                    const angle = pseudoRandom(seed + i * 3) * Math.PI * 2;
+                    const r = Math.sqrt(pseudoRandom(seed + i * 5)) * (w / 2 - 6);
+                    const sx = w / 2 + Math.cos(angle) * r;
+                    const sy = h / 2 + Math.sin(angle) * r;
+                    const sSize = pseudoRandom(seed + i * 11) > 0.85 ? 1.6 : 0.9;
+                    const alpha = pseudoRandom(seed + i * 17) * 0.7 + 0.3;
+                    ctx.fillStyle = "rgba(255, 255, 255, " + alpha + ")";
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, sSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                constellationStars.forEach(s => {
+                    ctx.shadowColor = "#f4c76b";
+                    ctx.shadowBlur = 8;
+                    ctx.fillStyle = "#fff4d1";
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+            }
+
+            drawStarMap(dateInput.value, noteInput.value);
+
+            updateBtn.addEventListener("click", () => {
+                localStorage.setItem("hayriye_sky_date", dateInput.value);
+                localStorage.setItem("hayriye_sky_note", noteInput.value);
+                drawStarMap(dateInput.value, noteInput.value);
+            });
+        })();
+
+        /* ============================================================
+           4. KAVUŞMA SAYACI
+           ============================================================ */
+        (function () {
+            const countDays = document.getElementById("countDays");
+            const countHours = document.getElementById("countHours");
+            const countMins = document.getElementById("countMins");
+            const countSecs = document.getElementById("countSecs");
+            const countdownMessage = document.getElementById("countdownMessage");
+            const dateInput = document.getElementById("countdownDateInput");
+            const saveBtn = document.getElementById("saveCountdownBtn");
+
+            let defaultTarget = new Date();
+            defaultTarget.setDate(defaultTarget.getDate() + 14);
+            defaultTarget.setHours(19, 0, 0, 0);
+
+            const savedDate = localStorage.getItem("hayriye_target_date");
+            let targetDate = savedDate ? new Date(savedDate) : defaultTarget;
+
+            function formatForInput(dt) {
+                const pad = num => String(num).padStart(2, "0");
+                const yr = dt.getFullYear();
+                const mo = pad(dt.getMonth() + 1);
+                const da = pad(dt.getDate());
+                const ho = pad(dt.getHours());
+                const mi = pad(dt.getMinutes());
+                return yr + "-" + mo + "-" + da + "T" + ho + ":" + mi;
+            }
+
+            dateInput.value = formatForInput(targetDate);
+
+            saveBtn.addEventListener("click", () => {
+                if (dateInput.value) {
+                    targetDate = new Date(dateInput.value);
+                    localStorage.setItem("hayriye_target_date", targetDate.toISOString());
+                    updateTimer();
+                }
+            });
+
+            function updateTimer() {
+                const now = new Date().getTime();
+                const distance = targetDate.getTime() - now;
+
+                if (distance <= 0) {
+                    countDays.textContent = "00";
+                    countHours.textContent = "00";
+                    countMins.textContent = "00";
+                    countSecs.textContent = "00";
+                    countdownMessage.style.display = "block";
+                } else {
+                    countdownMessage.style.display = "none";
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    countDays.textContent = String(days).padStart(2, "0");
+                    countHours.textContent = String(hours).padStart(2, "0");
+                    countMins.textContent = String(minutes).padStart(2, "0");
+                    countSecs.textContent = String(seconds).padStart(2, "0");
+                }
+            }
+
+            setInterval(updateTimer, 1000);
+            updateTimer();
+        })();
+
+        /* ============================================================
+           7. İKİ KİŞİLİK DİJİTAL KAVANOZ
+           ============================================================ */
+        (function () {
+            let currentAuthor = "Hayriye";
+            const authorBtns = document.querySelectorAll(".jar-author-btn");
+            const noteInput = document.getElementById("jarNoteInput");
+            const addBtn = document.getElementById("jarAddBtn");
+            const drawRandomBtn = document.getElementById("jarDrawRandomBtn");
+            const jarPickBtn = document.getElementById("jarPickBtn");
+            const notesList = document.getElementById("jarNotesList");
+            const miniPapers = document.getElementById("jarMiniPapers");
+            const configToggle = document.getElementById("jarConfigToggle");
+            const configPanel = document.getElementById("jarConfigPanel");
+            const restUrlInput = document.getElementById("syncRestUrl");
+            const apiKeyInput = document.getElementById("syncApiKey");
+            const saveSyncBtn = document.getElementById("saveSyncConfigBtn");
+            const syncIndicator = document.getElementById("jarSyncIndicator");
+            const syncText = document.getElementById("jarSyncText");
+
+            let jarNotes = [];
+            const saved = localStorage.getItem("hayriye_digital_jar");
+            if (saved) {
+                try { jarNotes = JSON.parse(saved); } catch(e) { jarNotes = []; }
+            } else {
+                jarNotes = [
+                    { id: "1", author: "Cuma", text: "Gözlerinin içine ilk baktığımda zamanın durduğu o anı hiç unutmuyorum.", date: "18 Mayıs 2024" },
+                    { id: "2", author: "Hayriye", text: "Birlikte yağmur altında ıslandığımız gün hayatımın en huzurlu anıydı.", date: "3 Haziran 2024" },
+                    { id: "3", author: "Cuma", text: "Gelecekte birlikte deniz kenarında sabah kahvelerimizi içeceğimiz günü hayal ediyorum.", date: "12 Temmuz 2024" }
+                ];
+                saveNotes();
+            }
+
+            let syncConfig = {
+                url: localStorage.getItem("hayriye_sync_url") || "",
+                key: localStorage.getItem("hayriye_sync_key") || ""
+            };
+            restUrlInput.value = syncConfig.url;
+            apiKeyInput.value = syncConfig.key;
+
+            if (syncConfig.url) {
+                syncIndicator.style.background = "#38bdf8";
+                syncIndicator.style.boxShadow = "0 0 6px #38bdf8";
+                syncText.textContent = "Bulut Senkronizasyonu Aktif (Supabase/Firebase)";
+                fetchRemoteNotes();
+            }
+
+            authorBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    authorBtns.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    currentAuthor = btn.getAttribute("data-author");
+                });
+            });
+
+            configToggle.addEventListener("click", () => {
+                configPanel.classList.toggle("open");
+            });
+
+            saveSyncBtn.addEventListener("click", () => {
+                syncConfig.url = restUrlInput.value.trim();
+                syncConfig.key = apiKeyInput.value.trim();
+                localStorage.setItem("hayriye_sync_url", syncConfig.url);
+                localStorage.setItem("hayriye_sync_key", syncConfig.key);
+                if (syncConfig.url) {
+                    syncIndicator.style.background = "#38bdf8";
+                    syncIndicator.style.boxShadow = "0 0 6px #38bdf8";
+                    syncText.textContent = "Bulut Senkronizasyonu Aktif";
+                    fetchRemoteNotes();
+                } else {
+                    syncIndicator.style.background = "#22c55e";
+                    syncIndicator.style.boxShadow = "0 0 6px #22c55e";
+                    syncText.textContent = "Yerel Hafıza (Aktif)";
+                }
+                configPanel.classList.remove("open");
+                alert("Senkronizasyon ayarları güncellendi.");
+            });
+
+            function saveNotes() {
+                localStorage.setItem("hayriye_digital_jar", JSON.stringify(jarNotes));
+                renderNotes();
+                renderMiniPapers();
+                if (syncConfig.url) {
+                    pushRemoteNotes();
+                }
+            }
+
+            function fetchRemoteNotes() {
+                if (!syncConfig.url) return;
+                fetch(syncConfig.url, {
+                    headers: syncConfig.key ? { "apikey": syncConfig.key, "Authorization": "Bearer " + syncConfig.key } : {}
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        jarNotes = data;
+                        localStorage.setItem("hayriye_digital_jar", JSON.stringify(jarNotes));
+                        renderNotes();
+                        renderMiniPapers();
+                    }
+                })
+                .catch(err => console.log("Sync fetch error:", err));
+            }
+
+            function pushRemoteNotes() {
+                if (!syncConfig.url) return;
+                fetch(syncConfig.url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(syncConfig.key ? { "apikey": syncConfig.key, "Authorization": "Bearer " + syncConfig.key } : {})
+                    },
+                    body: JSON.stringify(jarNotes[0])
+                }).catch(err => console.log("Sync push error:", err));
+            }
+
+            function renderNotes() {
+                notesList.innerHTML = "";
+                if (jarNotes.length === 0) {
+                    notesList.innerHTML = '<p style="color:var(--ink-dim); text-align:center; font-size:0.85rem;">Kavanoz henüz boş, ilk notu sen bırak...</p>';
+                    return;
+                }
+                jarNotes.forEach((n, idx) => {
+                    const item = document.createElement("div");
+                    item.className = "jar-note-item" + (n.author === "Cuma" ? " author-cuma" : "");
+                    item.innerHTML = `
+                        <div class="jar-note-text">
+                            <div>${escapeHTML(n.text)}</div>
+                            <div class="jar-note-meta">— ${escapeHTML(n.author)} • ${n.date}</div>
+                        </div>
+                        <button class="jar-note-delete" title="Notu sil">&times;</button>
+                    `;
+                    item.querySelector(".jar-note-delete").addEventListener("click", () => {
+                        if (confirm("Bu notu kavanozdan silmek istediğine emin misin?")) {
+                            jarNotes.splice(idx, 1);
+                            saveNotes();
+                        }
+                    });
+                    notesList.appendChild(item);
+                });
+            }
+
+            function renderMiniPapers() {
+                miniPapers.innerHTML = "";
+                const colors = ["#f4c76b", "#f2a6ad", "#a8d5ba", "#d4b2d8", "#f8d59d"];
+                const count = Math.min(jarNotes.length, 25);
+                for (let i = 0; i < count; i++) {
+                    const mini = document.createElement("div");
+                    mini.className = "jar-mini-note";
+                    mini.style.background = colors[i % colors.length];
+                    mini.style.transform = "rotate(" + ((i * 37) % 40 - 20) + "deg)";
+                    miniPapers.appendChild(mini);
+                }
+            }
+
+            function escapeHTML(str) {
+                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            }
+
+            addBtn.addEventListener("click", () => {
+                const text = noteInput.value.trim();
+                if (!text) return;
+                const newNote = {
+                    id: Date.now().toString(),
+                    author: currentAuthor,
+                    text: text,
+                    date: new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })
+                };
+                jarNotes.unshift(newNote);
+                saveNotes();
+                noteInput.value = "";
+            });
+
+            function drawRandomNote() {
+                if (jarNotes.length === 0) {
+                    alert("Kavanoz şu an boş!");
+                    return;
+                }
+                const randomNote = jarNotes[Math.floor(Math.random() * jarNotes.length)];
+                alert("📜 Kavanozdan Bir Anı Çıktı:\n\n\"" + randomNote.text + "\"\n\n— " + randomNote.author + " (" + randomNote.date + ")");
+            }
+
+            drawRandomBtn.addEventListener("click", drawRandomNote);
+            jarPickBtn.addEventListener("click", drawRandomNote);
+
+            renderNotes();
+            renderMiniPapers();
+        })();
+    </script>
+
+</body>
+
+</html>
